@@ -73,7 +73,7 @@ export default function Main() {
     setTimer(t.format("LTS"));
 
     return () => clearInterval(interval);
-  }, []);
+  }, [times]);
 
   const contDownTimer = () => {
     const now = moment();
