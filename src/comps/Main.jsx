@@ -21,12 +21,22 @@ moment.locale("ar-dz");
 
 export default function Main() {
   const [Today, setToday] = useState("");
-  const [timer, setTimer] = useState();
+  const [timer, setTimer] = useState("");
+  const [nextprayerIndex, setNextprayerIndex] = useState(0);
+  const [remainingTimer, setRemainingTimer] = useState("")
 
   const cities = [
     { displayName: "المدينة المنورة", apiName: "Madina" },
     { displayName: "مكة المكرمة", apiName: "Makkah" },
   ];
+
+  const prayers = [
+    {key: "Fajr", displayName: "الفجر"},
+    {key: "Dhuhr", displayName: "الظهر"},
+    {key: "Asr", displayName: "العصر"},
+    {key: "Maghrib", displayName: "المغرب"},
+    {key: "Isha", displayName: "العشاء"},
+  ]
 
   const getTimings = async () => {
     const res = await axios.get(
@@ -66,26 +76,75 @@ export default function Main() {
   }, []);
 
   const contDownTimer = () => {
+    const now = moment();
+
+    let nextPrayer = 0;
+
+    if (
+      now.isAfter(moment(times["Fajr"], "h:mm")) &&
+      now.isBefore(moment(times["Dhuhr"], "h:mm"))
+    ) {
+      nextPrayer = 1;
+    }else if(
+      now.isAfter(moment(times["Dhuhr"], "h:mm")) &&
+      now.isBefore(moment(times["Asr"], "h:mm"))
+    ) {
+      nextPrayer = 2;
+    }else if(
+      now.isAfter(moment(times["Asr"], "h:mm")) &&
+      now.isBefore(moment(times["Maghrib"], "h:mm"))
+    ) {
+      nextPrayer = 3;
+    }else if(
+      now.isAfter(moment(times["Maghrib"], "h:mm")) &&
+      now.isBefore(moment(times["Isha"], "h:mm"))
+    ) {
+      nextPrayer = 4;
+    }else{
+      nextPrayer = 0;
+    }
+    setNextprayerIndex(nextPrayer);
+
+    const nextPrayerObject = prayers[nextPrayer];
+    const nextPrayerTime = times[nextPrayerObject.key];
+    const remainingPrayerTime = moment(nextPrayerTime, "hh:mm")
     
-  }
+    let remainingTime = moment(nextPrayerTime, "hh:mm").diff(now);
+
+
+    if(remainingTime < 0){
+      const midnight = moment("23:59:59", "hh:mm:ss").diff(now);
+      const FajrTomMidnight = remainingPrayerTime.diff(moment("00:00:00", "hh:mm:ss"))
+      const totalDiff = midnight + FajrTomMidnight;
+
+      remainingTime = totalDiff;
+      
+    } 
+       const durationTime = moment.duration(remainingTime);
+
+       setRemainingTimer(
+        `${durationTime.seconds()} : ${durationTime.minutes()} : ${durationTime.hours()}` 
+       );
+
+  };
 
   const handleChange = (e) => {
-    const selectedCity = cities.find(city => city.apiName === e.target.value);
+    const selectedCity = cities.find((city) => city.apiName === e.target.value);
     setCity(selectedCity);
   };
   return (
     <>
       <Grid container>
-        <Grid >
+        <Grid>
           <div>
             <h2 className="cityName">{city.displayName}</h2>
             <h2 className="date">{Today}</h2>
           </div>
         </Grid>
-        <Grid >
+        <Grid>
           <div>
-            <h2 className="cityName">الوقت المتبقي للصلاة</h2>
-            <h2 className="date">{timer}</h2>
+            <h2 className="cityName">الوقت المتبقي لصلاة {prayers[nextprayerIndex].displayName}</h2>
+            <h2 className="date">{remainingTimer}</h2>
           </div>
         </Grid>
       </Grid>
